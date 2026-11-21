@@ -1,0 +1,11 @@
+name = "amin-food-app-v2"
+main = "src/index.js"
+compatibility_date = "2026-11-21"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "amin-food-db-v2"
+database_id = "818783d4-7bea-4238-b419-a1ce3f78b9e8"
+
+[assets]
+directory = "../public"
