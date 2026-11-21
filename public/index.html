@@ -1,11 +1,54 @@
-<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#102b46"><title>برنامه غذایی امین</title><style>*{box-sizing:border-box}body{margin:0;background:#f2f5f8;color:#243447;font-family:Tahoma,Arial,sans-serif;line-height:1.9}header{background:#102b46;color:white;padding:25px 18px;text-align:center}header h1{margin:0;font-size:24px}main{max-width:760px;margin:22px auto;padding:0 14px}.card{background:white;border:1px solid #e2e8ef;border-radius:15px;padding:19px;margin-bottom:16px}h2{font-size:17px;margin:0 0 12px;color:#163957}.status{background:#edf5fb;border-radius:10px;padding:12px}.status div{margin:4px 0}label{display:block;font-size:13px;margin:12px 0 4px}input,textarea{width:100%;padding:11px;border:1px solid #ccd6e0;border-radius:9px;font:inherit;background:white}button{width:100%;padding:12px;border:0;border-radius:9px;background:#174d73;color:white;font:inherit;font-weight:bold;margin-top:12px}.secondary{background:#e8f0f6;color:#174d73}.preview{white-space:pre-wrap;background:#f6f8fa;padding:14px;border-radius:10px;font-size:13px;min-height:80px}.note{font-size:12px;color:#64748b}.msg{font-size:13px;margin-top:8px;color:#174d73}footer{text-align:center;padding:18px;color:#7b8794;font-size:11px}</style></head><body><header><h1>برنامه غذایی امین</h1><p>مدیریت وزن و برنامه شام روزانه</p></header><main>
-<section class="card"><h2>وضعیت برنامه</h2><div class="status"><div>وزن مبنا: <b id="showWeight">۱۱۶</b> کیلوگرم</div><div>هدف پروتئین: <b id="showProtein">۱۱۰ تا ۱۲۵</b> گرم</div><div>زمان ارسال: <b id="showTime">تنظیم نشده</b></div><div>وضعیت اتصال: <b id="connection">در حال بررسی…</b></div></div></section>
-<section class="card"><h2>تنظیمات امین و راضیه</h2><label>نام دریافت‌کننده</label><input id="recipient_name" value="راضیه"><label>شماره واتساپ با کد کشور (مثلاً 98912xxxxxxx)</label><input id="whatsapp_number" type="tel" inputmode="numeric" placeholder="98912xxxxxxx"><label>وزن مبنا (کیلوگرم)</label><input id="baseline_weight" type="number" value="116"><label>هدف پروتئین روزانه (گرم)</label><input id="target_protein" value="110-125"><label>ساعت ارسال به وقت ایران</label><input id="send_time" type="time"><label>ملاحظات تغذیه‌ای</label><textarea id="dietary_notes" rows="3">هدف کاهش چربی و حفظ عضله؛ سابقه سنگ کلیه؛ پرهیز از پروتئین افراطی</textarea><label>توکن مدیر (یک‌بار از Cloudflare دریافت و وارد شود)</label><input id="admin_token" type="password" autocomplete="off" placeholder="ADMIN_TOKEN"><button onclick="saveSettings()">ذخیره تنظیمات در فضای ابری</button><button class="secondary" onclick="makePreview()">تولید شام هوشمند</button><div id="msg" class="msg"></div><p class="note">ذخیره ابری و تولید شام نیازمند تنظیم ADMIN_TOKEN و OPENAI_API_KEY در Cloudflare است. ارسال واتساپ هنوز فعال نیست.</p></section>
-<section class="card"><h2>پیش‌نمایش پیام روزانه</h2><div id="preview" class="preview">برای تولید شام هوشمند دکمه بالا را بزنید.</div></section></main><footer>امین فود</footer><script>
-const $=id=>document.getElementById(id); const api=(path,opts={})=>fetch(path,{...opts,headers:{"Content-Type":"application/json","X-Admin-Token":localStorage.getItem("aminFoodAdminToken")||$("admin_token").value,...opts.headers}});
-function setMsg(t){$("msg").textContent=t}
-function show(s){$("recipient_name").value=s.recipient_name||"راضیه";$("whatsapp_number").value=s.whatsapp_number||"";$("baseline_weight").value=s.baseline_weight??116;$("target_protein").value=s.target_protein||"110-125";$("send_time").value=s.send_time||"";$("dietary_notes").value=s.dietary_notes||"";$("showWeight").textContent=s.baseline_weight??116;$("showProtein").textContent=(s.target_protein||"110-125").replace("-"," تا ");$("showTime").textContent=s.send_time||"تنظیم نشده"}
-async function load(){const token=localStorage.getItem("aminFoodAdminToken");if(token)$("admin_token").value=token;try{const h=await fetch("/api/health");$("connection").textContent=h.ok?"Worker فعال":"نامشخص";if(token){const r=await api("/api/settings");const d=await r.json();if(!r.ok)throw Error(d.error);show(d.settings)}}catch(e){setMsg(e.message)}}
-async function saveSettings(){const token=$("admin_token").value.trim();if(!token){setMsg("ابتدا توکن مدیر را وارد کن.");return}localStorage.setItem("aminFoodAdminToken",token);const data={recipient_name:$("recipient_name").value,whatsapp_number:$("whatsapp_number").value,baseline_weight:$("baseline_weight").value,target_protein:$("target_protein").value,send_time:$("send_time").value,dietary_notes:$("dietary_notes").value};try{const r=await api("/api/settings",{method:"PUT",body:JSON.stringify(data)});const d=await r.json();if(!r.ok)throw Error(d.error);show(d.settings);setMsg("تنظیمات با موفقیت در دیتابیس ابری ذخیره شد.")}catch(e){setMsg("ذخیره ناموفق: "+e.message)}}
-async function makePreview(){const token=$("admin_token").value.trim()||localStorage.getItem("aminFoodAdminToken");if(!token){setMsg("ابتدا توکن مدیر را وارد کن.");return}try{const r=await api("/api/preview",{method:"POST",body:JSON.stringify({})});const d=await r.json();if(!r.ok)throw Error(d.error);$("preview").textContent=d.message;setMsg("پیام هوشمند تولید شد.")}catch(e){setMsg("تولید پیام ناموفق: "+e.message)}}
-load();</script></body></html>
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,PUT,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type,X-Admin-Token"
+};
+const json = (data, status=200) => new Response(JSON.stringify(data), {status,headers:{...cors,"Content-Type":"application/json; charset=utf-8"}});
+const authorized = (req, env) => !!env.ADMIN_TOKEN && req.headers.get("X-Admin-Token") === env.ADMIN_TOKEN;
+async function getSettings(env) {
+  return await env.DB.prepare("SELECT * FROM app_settings WHERE id=1").first();
+}
+async function saveSettings(env, s) {
+  const phone = String(s.whatsapp_number ?? "").replace(/[\s()+-]/g, "");
+  if (phone && !/^\d{10,15}$/.test(phone)) throw new Error("شماره واتساپ باید با کد کشور و فقط شامل ارقام باشد؛ مانند 98912xxxxxxx");
+  const weight = Number(s.baseline_weight);
+  if (!Number.isFinite(weight) || weight < 30 || weight > 300) throw new Error("وزن مبنا معتبر نیست.");
+  const sendTime = String(s.send_time || "");
+  if (sendTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(sendTime)) throw new Error("ساعت ارسال معتبر نیست.");
+  await env.DB.prepare(`UPDATE app_settings SET recipient_name=?,whatsapp_number=?,baseline_weight=?,target_protein=?,send_time=?,timezone=?,dietary_notes=?,active=? WHERE id=1`)
+    .bind(String(s.recipient_name || "راضیه").slice(0,80), phone, weight, String(s.target_protein || "110-125").slice(0,40), sendTime || null, "Asia/Tehran", String(s.dietary_notes || "").slice(0,1000), s.active === false ? 0 : 1).run();
+  return getSettings(env);
+}
+function dateParts() {
+  const now = new Date();
+  const date = new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tehran",year:"numeric",month:"2-digit",day:"2-digit"}).format(now);
+  const jalali = new Intl.DateTimeFormat("fa-IR-u-ca-persian",{timeZone:"Asia/Tehran",year:"numeric",month:"2-digit",day:"2-digit"}).format(now);
+  const weekday = new Intl.DateTimeFormat("fa-IR",{timeZone:"Asia/Tehran",weekday:"long"}).format(now);
+  return {date,jalali,weekday};
+}
+async function createDinnerMessage(env,s) {
+  if (!env.OPENAI_API_KEY) throw new Error("کلید هوش مصنوعی هنوز در Cloudflare تنظیم نشده است.");
+  const d=dateParts();
+  const prompt=`یک پیام شام روزانه فارسی و قابل ارسال به ${s.recipient_name||"راضیه"} بنویس. امروز ${d.weekday}، تاریخ شمسی ${d.jalali} و میلادی ${d.date} است. وزن مبنا ${s.baseline_weight} کیلوگرم؛ هدف پروتئین ${s.target_protein} گرم. ملاحظات: ${s.dietary_notes||"ندارد"}. یک شام متنوع، کم‌کالری و دارای پروتئین متعادل پیشنهاد بده. مواد اولیه را با مقدار دقیق گرم، روش پخت کم‌روغن، کالری و پروتئین تقریبی کل وعده بنویس. از ادعای درمانی و توصیه پروتئین افراطی پرهیز کن. با سابقه سنگ کلیه، یادآوری کن هدف پروتئین باید با توجه به نوع سنگ و عملکرد کلیه بازبینی شود. پیام صمیمی و مختصر باشد.`;
+  const r=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{Authorization:`Bearer ${env.OPENAI_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({model:env.OPENAI_MODEL||"gpt-4.1-mini",messages:[{role:"system",content:"دستیار برنامه غذایی محتاط هستی؛ مقادیر تغذیه‌ای را تقریبی اعلام کن."},{role:"user",content:prompt}],temperature:0.7})});
+  const body=await r.json(); if(!r.ok) throw new Error(body.error?.message||"خطا در تولید پیام هوشمند");
+  return body.choices?.[0]?.message?.content || "پیام تولید نشد.";
+}
+export default {
+ async fetch(req,env){
+  if(req.method==="OPTIONS") return new Response(null,{headers:cors});
+  const u=new URL(req.url);
+  if(u.pathname.startsWith("/api/") && !authorized(req,env)) return json({error:"دسترسی مجاز نیست. توکن مدیر را در تنظیمات اپ وارد کن."},401);
+  try {
+   if(u.pathname==="/api/health" && req.method==="GET") return json({ok:true,db:!!env.DB});
+   if(u.pathname==="/api/settings" && req.method==="GET") return json({settings:await getSettings(env)});
+   if(u.pathname==="/api/settings" && req.method==="PUT") return json({ok:true,settings:await saveSettings(env,await req.json())});
+   if(u.pathname==="/api/preview" && req.method==="POST") { const s={...(await getSettings(env)),...(await req.json())}; return json({message:await createDinnerMessage(env,s)}); }
+   return env.ASSETS.fetch(req);
+  } catch(e){ return json({error:e.message||"خطای غیرمنتظره"},500); }
+ },
+ async scheduled(event,env,ctx){
+  // WhatsApp sending is intentionally not enabled until Meta credentials and an approved template are configured.
+  ctx.waitUntil((async()=>{const s=await getSettings(env); if(!s?.active||!s?.send_time) return; const now=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Tehran",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date()); if(now!==s.send_time) return; console.log("Schedule reached; WhatsApp delivery is not enabled yet.");})());
+ }
+};
